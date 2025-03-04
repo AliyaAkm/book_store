@@ -1,11 +1,11 @@
 package main
 
 import (
+	"book_store/internal/auth"
 	"log"
 	"net/http"
 
 	"book_store/config"
-	"book_store/internal/auth"
 	"book_store/internal/book"
 	"book_store/internal/user"
 
