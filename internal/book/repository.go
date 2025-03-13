@@ -16,7 +16,8 @@ func NewRepository(db *gorm.DB) *Repository {
 
 func (r *Repository) GetAllBooks(ctx context.Context) ([]Book, error) {
 	var books []Book
-	result := r.db.WithContext(ctx).Find(&books)
+	// связывем с WithContext чтобы он зависел от действ клиента
+	result := r.db.WithContext(ctx).Find(&books) //  запрашивает все книги из базы и привязывает контекст к запросу
 	if result.Error != nil {
 		return nil, result.Error
 	}

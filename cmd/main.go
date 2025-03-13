@@ -76,10 +76,13 @@ func main() {
 
 		ctxShutdown, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
+
 		if err := server.Shutdown(ctxShutdown); err != nil {
 			log.Fatal("Server shutdown failed:", err)
 		}
+
 		log.Println("Server stopped gracefully")
+		time.Sleep(1 * time.Second)
 	}()
 
 	log.Println("Server is running on port 8084")

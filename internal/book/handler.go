@@ -10,13 +10,6 @@ import (
 	"time"
 )
 
-type BookResponse struct {
-	ID     uint    `json:"id"`
-	Title  string  `json:"title"`
-	Author string  `json:"author"`
-	Price  float64 `json:"price"`
-}
-
 type Response struct {
 	Status  string      `json:"status"`
 	Message string      `json:"message"`
@@ -166,7 +159,7 @@ func (h *Handler) BackgroundTask(ctx context.Context) {
 	}
 }
 
-// контекст с WithCancel. если запрос не завершается за 2 сек, то она принудительно закроется вручную
+// контекст с WithCancel. если запрос не завершается за 2 сек, то она принудительно закроется вручную через 3 сек
 func (h *Handler) CancelableOperation(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
