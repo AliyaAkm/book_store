@@ -15,15 +15,23 @@ type UserResponse struct {
 type Handler struct {
 	service *Service
 }
+type Response struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
 func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	users, err := h.service.GetAllUsers()
 	if err != nil {
-		http.Error(w, "Failed to retrieve users", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		response := Response{Status: "fail", Message: "Failed to retrieve users"}
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -35,83 +43,126 @@ func (h *Handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(userResponses)
+	w.WriteHeader(http.StatusOK)
+	response := Response{Status: "success", Message: "successfully retrivied all users", Data: userResponses}
+	json.NewEncoder(w).Encode(response)
 }
-
 func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Получаем ID из запроса
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Invalid user ID"})
 		return
 	}
 
+	// Получаем пользователя по ID
 	user, err := h.service.GetUserByID(uint(id))
 	if err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "User not found"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	// Отправляем успешный ответ
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(Response{
+		Status:  "success",
+		Message: "User retrieved successfully",
+		Data:    user,
+	})
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Парсим JSON-запрос
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Invalid input"})
 		return
 	}
 
+	// Создаем пользователя
 	if err := h.service.CreateUser(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: err.Error()})
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+
+	// Отправляем ответ
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(Response{
+		Status:  "success",
+		Message: "User created successfully",
+		Data:    user,
+	})
 }
 
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Получаем ID пользователя из запроса
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Invalid user ID"})
 		return
 	}
 
+	// Парсим JSON-запрос
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Invalid input"})
 		return
 	}
 
+	// Обновляем пользователя
 	user.ID = uint(id)
-
 	if err := h.service.UpdateUser(user); err != nil {
-		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Failed to update user"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "User updated successfully"})
+	// Отправляем ответ
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(Response{
+		Status:  "success",
+		Message: "User updated successfully",
+		Data:    user,
+	})
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Получаем ID пользователя
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Invalid user ID"})
 		return
 	}
 
+	// Удаляем пользователя
 	if err := h.service.DeleteUser(uint(id)); err != nil {
-		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(Response{Status: "fail", Message: "Failed to delete user"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	// Отправляем ответ
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
+	json.NewEncoder(w).Encode(Response{
+		Status:  "success",
+		Message: "User deleted successfully",
+	})
 }
